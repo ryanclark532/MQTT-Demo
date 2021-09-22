@@ -1,8 +1,6 @@
 import paho.mqtt.client as mqtt
 import time
-import timerthread
-from tinyPeriodicTask import TinyPeriodicTask
-
+import schedule
 
 genertor_topic = 'generator'
 calculator_topic = 'calculator'
@@ -12,15 +10,21 @@ thirty_min_average = []
 
 
 def on_message(client, userdata, msg):
+    print('Message Recived')
     if(msg.topic == genertor_topic):
         one_min_average.append(int(msg.payload.decode()))
         five_min_average.append(int(msg.payload.decode()))
         thirty_min_average.append(int(msg.payload.decode()))
 
 
+def on_publish(client, userdata, mid):
+    print("{} {} {}".format(client, userdata, mid))
+
+
 calculator_client = mqtt.Client()
 calculator_client.on_message = on_message
-calculator_client.connect("127.0.0.1", 1883, 60)
+calculator_client.on_publish = on_publish
+calculator_client.connect("localhost", 1883)
 
 
 def average(lst):
@@ -48,15 +52,13 @@ def get_thirty_average():
     thirty_min_average.clear()
 
 
-get_one = TinyPeriodicTask(60, get_one_average)
-get_five = TinyPeriodicTask(300, get_five_average)
-get_thirty = TinyPeriodicTask(1800, get_thirty_average)
-get_one.start()
-get_five.start()
-get_thirty.start()
-
 calculator_client.subscribe(genertor_topic, qos=1)
 calculator_client.loop_start()
 
+
+schedule.every(1).minutes.do(get_one_average)
+schedule.every(5).minutes.do(get_five_average)
+schedule.every(30).minutes.do(get_thirty_average)
 while True:
-    time.sleep(0.5)
+    schedule.run_pending()
+    time.sleep(0.01)

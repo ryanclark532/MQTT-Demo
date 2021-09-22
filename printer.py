@@ -29,7 +29,7 @@ printer_client = mqtt.Client()
 
 printer_client.on_message = on_message
 
-printer_client.connect("127.0.0.1", 1883, 60)
+printer_client.connect("localhost", 1883, 60)
 
 printer_client.subscribe(printer_topic)
 
